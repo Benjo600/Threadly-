@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Recipro - Settings</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(to top right, #1f2937, #4c1d95, #000);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .settings-container {
+      background: #3b0764;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+      border-radius: 1.5rem;
+      padding: 2.5rem;
+      max-width: 32rem;
+      width: 100%;
+      color: #e9d5ff;
+    }
+    .settings-container h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      text-align: center;
+      color: #fff;
+      margin-bottom: 1.5rem;
+    }
+    .settings-container label {
+      display: block;
+      color: #e9d5ff;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .settings-container textarea,
+    .settings-container input,
+    .settings-container select {
+      width: 100%;
+      padding: 1rem;
+      background: #fff;
+      color: #1f2937;
+      border: 1px solid #d1d5db;
+      border-radius: 0.5rem;
+      margin-bottom: 1.5rem;
+      font-size: 1rem;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .settings-container textarea:focus,
+    .settings-container input:focus,
+    .settings-container select:focus {
+      outline: none;
+      box-shadow: 0 0 0 4px #a78bfa;
+      border-color: transparent;
+    }
+    .settings-container button {
+      width: 100%;
+      background: linear-gradient(to right, #a78bfa, #f472b6);
+      color: #fff;
+      font-weight: 700;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+      transition: opacity 0.3s;
+      font-size: 1.125rem;
+    }
+    .settings-container button:hover {
+      opacity: 0.9;
+    }
+    .back-btn {
+      background: #6b21a8;
+      margin-top: 1rem;
+    }
+    .back-btn:hover {
+      background: #c026d3;
+    }
+    #tokenUsage h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 1rem;
+    }
+    #tokenUsage p {
+      margin-bottom: 0.5rem;
+      font-size: 1rem;
+      color: #f3e8ff;
+    }
+    #tokenUsage span {
+      font-weight: 600;
+      color: #f9e2af;
+    }
+  </style>
+</head>
+<body>
+  <div class="settings-container">
+    <h1>AI Settings</h1>
+    <form id="settingsForm">
+      <div>
+        <label>Custom Instructions for AI</label>
+        <textarea id="customInstructions" placeholder="Enter any specific instructions for the AI..." rows="4" maxlength="500"></textarea>
+      </div>
+      <div>
+        <label>Custom Call to Action</label>
+        <input id="customCTA" type="text" placeholder="Enter your custom CTA..." maxlength="100">
+      </div>
+      <div>
+        <label>Post Tone</label>
+        <select id="tone">
+          <option value="Friendly">Friendly</option>
+          <option value="Authoritative">Authoritative</option>
+          <option value="Professional" selected>Professional</option>
+          <option value="Casual">Casual</option>
+        </select>
+      </div>
+      <div>
+        <label>Audience Pain Points</label>
+        <textarea id="painPoints" placeholder="Enter your audience's pain points (e.g., struggling with time management, lack of engagement)..." rows="4" maxlength="500"></textarea>
+      </div>
+      <button type="submit">Save Settings</button>
+    </form>
+    <div id="tokenUsage" class="mt-6">
+      <h2>Token Usage</h2>
+      <p>Tokens used in the last minute: <span id="tokensLastMinute">0</span></p>
+      <p>Tokens used today: <span id="tokensUsedToday">0</span></p>
+      <p>Tokens remaining today: <span id="tokensRemainingToday">100,000</span></p>
+    </div>
+    <a href="index.html">
+      <button class="back-btn">Back to Main</button>
+    </a>
+  </div>
+  <script>
+    const settingsForm = document.getElementById('settingsForm');
+    const customInstructions = document.getElementById('customInstructions');
+    const customCTA = document.getElementById('customCTA');
+    const tone = document.getElementById('tone');
+    const painPoints = document.getElementById('painPoints');
+
+    // Load saved settings from localStorage
+    window.addEventListener('load', () => {
+      customInstructions.value = localStorage.getItem('customInstructions') || '';
+      customCTA.value = localStorage.getItem('customCTA') || '';
+      tone.value = localStorage.getItem('tone') || 'Professional';
+      painPoints.value = localStorage.getItem('painPoints') || '';
+      fetchTokenUsage();
+    });
+
+    // Save settings to localStorage on form submit
+    settingsForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      localStorage.setItem('customInstructions', customInstructions.value.trim());
+      localStorage.setItem('customCTA', customCTA.value.trim());
+      localStorage.setItem('tone', tone.value);
+      localStorage.setItem('painPoints', painPoints.value.trim());
+      alert('Settings saved!');
+      location.reload();
+    });
+
+    // Fetch and display token usage
+    async function fetchTokenUsage() {
+      try {
+        const res = await fetch('http://localhost:5000/token_usage');
+        if (!res.ok) throw new Error('Failed to fetch token usage');
+        const data = await res.json();
+        document.getElementById('tokensLastMinute').textContent = data.tokens_last_minute.toLocaleString();
+        document.getElementById('tokensUsedToday').textContent = data.tokens_used_today.toLocaleString();
+        document.getElementById('tokensRemainingToday').textContent = data.tokens_remaining_today.toLocaleString();
+      } catch (err) {
+        console.error('Error fetching token usage:', err);
+      }
+    }
+  </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93e111e04c0653f0',t:'MTc0Njk2MDE0OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

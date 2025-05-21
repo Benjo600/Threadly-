@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Text Repurposing - Recipro</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    .post-box {
+      background: #4c1d95;
+      color: #fff;
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+      margin: 1.5rem 0;
+      max-width: 100%;
+      line-height: 1.8;
+      font-size: 1.1rem;
+      border-left: 5px solid #a78bfa;
+    }
+    .post-box h3 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: #e9d5ff;
+      border-bottom: 2px solid #a78bfa;
+      padding-bottom: 0.5rem;
+    }
+    .post-box p {
+      margin-bottom: 1rem;
+      color: #f3e8ff;
+    }
+    .post-box strong {
+      color: #f9e2af;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 0.2rem 0.5rem;
+      border-radius: 0.25rem;
+      display: inline-block;
+    }
+    .post-box .copy-btn {
+      color: #d8b4fe;
+      text-decoration: underline;
+      font-size: 0.875rem;
+      cursor: pointer;
+      margin-right: 1rem;
+    }
+    .post-box .copy-btn:hover {
+      color: #f9e2af;
+    }
+    .export-btn {
+      background: #a78bfa;
+      color: #fff;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+      margin-left: 1rem;
+    }
+    .export-btn:hover {
+      background: #c4b5fd;
+    }
+    .export-option-btn {
+      background: #a78bfa;
+      color: #fff;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+      margin: 0 0.5rem;
+    }
+    .export-option-btn:hover {
+      background: #c4b5fd;
+    }
+    .popup {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .popup.hidden {
+      display: none;
+    }
+    .popup-content {
+      background: linear-gradient(135deg, #6b21a8, #c026d3);
+      padding: 2rem;
+      border-radius: 1rem;
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    }
+    .popup-content h2 {
+      color: #fff;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+    .popup-content p {
+      color: #e9d5ff;
+      margin-bottom: 1.5rem;
+    }
+    .popup-content button {
+      background: #f472b6;
+      color: #fff;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .popup-content button:hover {
+      background: #f9a8d4;
+    }
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.9);
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+      max-width: 400px;
+      width: 90%;
+      min-height: 200px;
+      z-index: 2000;
+      position: relative;
+    }
+    .progress-bar-container {
+      width: 100%;
+      height: 20px;
+      background: #2d3748;
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+      margin: 1rem 0;
+    }
+    .progress-bar {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #a78bfa, #f472b6);
+      transition: width 0.5s ease;
+    }
+    .running-man {
+      position: absolute;
+      top: -30px;
+      left: 0;
+      width: 30px;
+      height: 30px;
+      transition: left 0.5s ease;
+    }
+    .running-man::before {
+      content: '';
+      position: absolute;
+      top: 5px;
+      left: 10px;
+      width: 10px;
+      height: 10px;
+      background: #a78bfa;
+      border-radius: 50%;
+      box-shadow: 0 0 5px rgba(167, 139, 250, 0.5);
+    }
+    .running-man::after {
+      content: '';
+      position: absolute;
+      top: 15px;
+      left: 10px;
+      width: 10px;
+      height: 15px;
+      background: #a78bfa;
+      border-radius: 5px;
+      box-shadow: 0 0 5px rgba(167, 139, 250, 0.5);
+      animation: run 0.5s infinite;
+    }
+    @keyframes run {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-5px) rotate(10deg); }
+    }
+    .progress-text {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #e9d5ff;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      margin-bottom: 0.5rem;
+    }
+    .loading-message {
+      color: #f3e8ff;
+      font-size: 1.25rem;
+      margin-top: 1rem;
+      text-align: center;
+      opacity: 0;
+      animation: fadeInOut 3s infinite;
+      width: 100%;
+    }
+    .loading-fallback {
+      color: #f3e8ff;
+      font-size: 1.25rem;
+      text-align: center;
+      margin-top: 1rem;
+      display: block;
+    }
+    @keyframes fadeInOut {
+      0%, 100% { opacity: 0; transform: translateY(10px); }
+      20%, 80% { opacity: 1; transform: translateY(0); }
+    }
+    .loading-message:nth-child(2) { animation-delay: 0s; }
+    .loading-message:nth-child(3) { animation-delay: 3s; }
+    .loading-message:nth-child(4) { animation-delay: 6s; }
+    .loading-message:nth-child(5) { animation-delay: 9s; }
+    .loading-message:nth-child(6) { animation-delay: 12s; }
+    .loading-message.hidden { display: none; }
+    .settings-icon {
+      position: fixed;
+      top: 1rem;
+      right: 4rem;
+      color: #e9d5ff;
+      font-size: 1.5rem;
+      cursor: pointer;
+      z-index: 1000;
+      transition: color 0.3s;
+    }
+    .settings-icon:hover {
+      color: #f9e2af;
+    }
+    .nav-link {
+      color: #e9d5ff;
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      transition: all 0.3s;
+    }
+    .nav-link:hover {
+      background: rgba(167, 139, 250, 0.2);
+      color: #f9e2af;
+    }
+    .nav-link.active {
+      background: #a78bfa;
+      color: #fff;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-tr from-gray-900 via-purple-900 to-black min-h-screen flex flex-col items-center justify-center p-6 relative">
+  <div class="absolute top-4 left-4 flex space-x-4">
+    <a href="index.html" class="nav-link">Video Repurpose</a>
+    <a href="text-repurpose.html" class="nav-link active">Text Repurpose</a>
+  </div>
+  <a href="settings.html" class="settings-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  </a>
+  <div id="loading" class="hidden absolute inset-0 bg-black bg-opacity-80 flex flex-col justify-center items-center z-50">
+    <div class="loading-container">
+      <div class="progress-text">0%</div>
+      <div class="progress-bar-container">
+        <div class="progress-bar" id="progressBar"></div>
+        <div class="running-man" id="runningMan"></div>
+      </div>
+      <div class="loading-message">Transforming your text...</div>
+      <div class="loading-message">Crafting engaging posts...</div>
+      <div class="loading-message">Adding that special touch...</div>
+      <div class="loading-message">Almost ready to shine...</div>
+      <div class="loading-message">Just a moment more...</div>
+      <div class="loading-fallback">Processing your content, please wait...</div>
+    </div>
+  </div>
+  <div id="exportPopup" class="popup hidden">
+    <div class="popup-content">
+      <h2>Export Options</h2>
+      <p>Choose your export format:</p>
+      <div class="flex justify-center space-x-4">
+        <button id="exportWordBtn" class="export-option-btn">Export as Word</button>
+        <button id="exportPdfBtn" class="export-option-btn">Export as PDF</button>
+      </div>
+      <button id="closeExportPopupBtn" class="mt-4">Cancel</button>
+    </div>
+  </div>
+  <div class="bg-purple-950 shadow-2xl rounded-3xl p-10 max-w-2xl w-full space-y-8 relative z-10">
+    <h1 class="text-3xl font-extrabold text-center text-white">Text Content Repurposing</h1>
+    <p class="text-center text-gray-400 text-lg">Transform your text into engaging LinkedIn posts or Twitter threads.</p>
+    <div id="error" class="hidden bg-red-500 text-white p-4 rounded-2xl"></div>
+    <div class="space-y-6">
+      <div>
+        <label class="block text-gray-200 font-semibold mb-2">Your Text Content</label>
+        <textarea id="inputContent" class="w-full p-4 bg-white text-gray-900 border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-4 focus:ring-purple-500 focus:border-transparent" rows="8" placeholder="Paste your text content here..." required></textarea>
+      </div>
+      <div>
+        <label class="block text-gray-200 font-semibold mb-2">Select Output Type</label>
+        <select id="outputType" class="w-full p-4 bg-white text-gray-900 border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-4 focus:ring-purple-500 focus:border-transparent">
+          <option value="linkedin">LinkedIn Posts</option>
+          <option value="twitter">Twitter Threads</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-gray-200 font-semibold mb-2">Number of Posts</label>
+        <select id="numPosts" class="w-full p-4 bg-white text-gray-900 border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-4 focus:ring-purple-500 focus:border-transparent">
+          <option value="1">1 Post</option>
+          <option value="2">2 Posts</option>
+          <option value="3">3 Posts</option>
+          <option value="4">4 Posts</option>
+          <option value="5">5 Posts</option>
+        </select>
+      </div>
+      <button id="submitBtn" class="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 text-white font-bold py-4 rounded-2xl hover:opacity-90 shadow-lg text-lg">Generate Content</button>
+    </div>
+    <div id="output" class="mt-8 hidden">
+      <div class="flex items-center justify-between">
+        <h2 class="text-2xl font-bold text-white">Generated Output:</h2>
+        <button id="exportBtn" class="export-btn">Export</button>
+      </div>
+      <div id="outputText" class="space-y-4 mt-4"></div>
+    </div>
+  </div>
+  <script>
+    const { jsPDF } = window.jspdf;
+    const inputContent = document.getElementById('inputContent');
+    const outputType = document.getElementById('outputType');
+    const numPosts = document.getElementById('numPosts');
+    const submitBtn = document.getElementById('submitBtn');
+    const loading = document.getElementById('loading');
+    const output = document.getElementById('output');
+    const outputText = document.getElementById('outputText');
+    const error = document.getElementById('error');
+    const exportBtn = document.getElementById('exportBtn');
+    const exportPopup = document.getElementById('exportPopup');
+    const exportWordBtn = document.getElementById('exportWordBtn');
+    const exportPdfBtn = document.getElementById('exportPdfBtn');
+    const closeExportPopupBtn = document.getElementById('closeExportPopupBtn');
+
+    const backendUrl = 'http://localhost:5000';
+    console.log(`Connecting to backend at: ${backendUrl}`);
+
+    // Dynamic progress animation
+    function animateProgress() {
+      const progressText = document.querySelector('.progress-text');
+      const progressBar = document.querySelector('#progressBar');
+      const runningMan = document.querySelector('#runningMan');
+      let percent = 0;
+      const duration = 10000; // 10 seconds to reach 99%
+      const interval = 100; // Update every 100ms
+      const maxPercent = 99;
+
+      const updateProgress = setInterval(() => {
+        percent = Math.min(percent + (maxPercent * interval) / duration, maxPercent);
+        progressBar.style.width = `${percent}%`;
+        runningMan.style.left = `calc(${percent}% - 15px)`;
+        progressText.textContent = `${Math.round(percent)}%`;
+        if (percent >= maxPercent) clearInterval(updateProgress);
+      }, interval);
+
+      return () => clearInterval(updateProgress);
+    }
+
+    fetch(`${backendUrl}/`, { method: 'GET' })
+      .then(res => {
+        if (!res.ok) throw new Error('Backend health check failed');
+        return res.text();
+      })
+      .then(data => {
+        if (data !== 'OK') throw new Error('Backend did not return OK');
+        console.log('Backend health check passed:', data);
+      })
+      .catch(err => {
+        console.error('Backend connectivity error:', err);
+        error.classList.remove('hidden');
+        error.textContent = `Error: Cannot connect to backend at ${backendUrl}. Please ensure the backend is running. Details: ${err.message}`;
+      });
+
+    function closeExportPopup() {
+      console.log('Closing export popup');
+      exportPopup.classList.add('hidden');
+    }
+
+    closeExportPopupBtn.addEventListener('click', closeExportPopup);
+
+    let postsArray = [];
+
+    submitBtn.addEventListener('click', async () => {
+      error.classList.add('hidden');
+      output.classList.add('hidden');
+      outputText.innerHTML = '';
+
+      const text = inputContent.value.trim();
+      if (!text) {
+        error.classList.remove('hidden');
+        error.textContent = 'Please enter some text content.';
+        return;
+      }
+
+      const platform = outputType.value;
+      const num_posts = parseInt(numPosts.value);
+      const model = 'llama3-70b-8192';
+      const custom_instructions = localStorage.getItem('customInstructions') || '';
+      const custom_cta = localStorage.getItem('customCTA') || '';
+      const tone = localStorage.getItem('tone') || 'Professional';
+      const pain_points = localStorage.getItem('painPoints') || '';
+
+      console.log('Showing loading animation');
+      loading.classList.remove('hidden');
+      const stopProgress = animateProgress();
+
+      try {
+        const res = await fetch(`${backendUrl}/repurpose-text`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text,
+            platform,
+            num_posts,
+            custom_instructions,
+            custom_cta,
+            tone,
+            pain_points,
+            ai_model: model
+          }),
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          let errorData;
+          try {
+            errorData = JSON.parse(text);
+          } catch {
+            throw new Error(`Backend error: ${text}`);
+          }
+          throw new Error(errorData.error || `HTTP error: ${res.status}`);
+        }
+
+        const data = await res.json();
+        console.log('Backend success response:', data);
+        if (!data.summary) {
+          console.error('No summary in response:', data);
+          throw new Error('No summary in response');
+        }
+
+        console.log('Raw summary:', data.summary);
+        postsArray = data.summary.split('\n\n').filter(p => p.trim());
+        console.log(`Received ${postsArray.length} posts from backend:`, postsArray);
+
+        if (postsArray.length === 0) {
+          console.error('No posts after splitting summary');
+          throw new Error('No posts generated');
+        }
+
+        postsArray.forEach((post, index) => {
+          const postBox = document.createElement('div');
+          postBox.className = 'post-box';
+          postBox.innerHTML = `
+            <h3>Post ${index + 1}</h3>
+            <p>${post}</p>
+            <button class="copy-btn">Copy</button>
+          `;
+          outputText.appendChild(postBox);
+
+          const copyBtn = postBox.querySelector('.copy-btn');
+          copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(post);
+            copyBtn.textContent = 'Copied!';
+            setTimeout(() => copyBtn.textContent = 'Copy', 2000);
+          });
+        });
+
+        output.classList.remove('hidden');
+      } catch (err) {
+        console.error('Fetch error:', err);
+        error.classList.remove('hidden');
+        error.textContent = `Error: Failed to fetch from backend at ${backendUrl}. Details: ${err.message}`;
+      } finally {
+        console.log('Hiding loading animation');
+        loading.classList.add('hidden');
+        stopProgress();
+      }
+    });
+
+    exportBtn.addEventListener('click', () => {
+      if (postsArray.length === 0) {
+        alert('No posts to export!');
+        return;
+      }
+      exportPopup.classList.remove('hidden');
+    });
+
+    exportWordBtn.addEventListener('click', () => {
+      const doc = new docx.Document({
+        sections: [{
+          properties: {},
+          children: postsArray.map((post, index) => [
+            new docx.Paragraph({
+              text: `Post ${index + 1}`,
+              heading: docx.HeadingLevel.HEADING_2,
+              spacing: { after: 200 },
+            }),
+            new docx.Paragraph({
+              text: post,
+              spacing: { after: 400 },
+            }),
+          ]).flat(),
+        }],
+      });
+
+      docx.Packer.toBlob(doc).then(blob => {
+        saveAs(blob, 'posts.docx');
+        closeExportPopup();
+      }).catch(err => {
+        console.error('Error generating DOCX:', err);
+        alert('Failed to export as DOCX. Please try again.');
+      });
+    });
+
+    exportPdfBtn.addEventListener('click', () => {
+      const doc = new jsPDF();
+      let yOffset = 10;
+      const pageHeight = doc.internal.pageSize.height;
+      const margin = 10;
+      const maxWidth = 180;
+
+      postsArray.forEach((post, index) => {
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text(`Post ${index + 1}`, margin, yOffset);
+        yOffset += 10;
+
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "normal");
+        const splitText = doc.splitTextToSize(post, maxWidth);
+        splitText.forEach(line => {
+          if (yOffset + 10 > pageHeight - margin) {
+            doc.addPage();
+            yOffset = margin;
+          }
+          doc.text(line, margin, yOffset);
+          yOffset += 7;
+        });
+
+        yOffset += 10;
+      });
+
+      doc.save('posts.pdf');
+      closeExportPopup();
+    });
+  </script>
+</body>
+</html> 
